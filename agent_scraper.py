@@ -16,6 +16,14 @@ load_dotenv()
 api_id = int(os.getenv("API_ID"))
 api_hash = os.getenv("API_HASH")
 openai_key = os.getenv("OPENAI_API_KEY")
+
+# Decode session only once
+session_file = "session_aihome.session"
+if not os.path.exists(session_file):
+    session_b64 = os.getenv("SESSION_BASE64")
+    with open(session_file, "wb") as f:
+        f.write(base64.b64decode(session_b64))
+
 with open("groups.txt", "r") as f:
     group_usernames = [line.strip() for line in f if line.strip()]
 
@@ -77,16 +85,14 @@ Return ONLY in this JSON format:
 # خواندن پیام‌ها و ذخیره پیام‌های جدید
 def run_agent():
     print(f"⏱ Checking for new messages at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}...")    
-    
-    session_file = "session_aihome.session"
-    # Decode session file from base64
-    session_b64 = os.getenv("SESSION_BASE64")
-    with open(session_file, "wb") as f:
-        f.write(base64.b64decode(session_b64))
-
     client = TelegramClient(session_file.replace(".session", ""), api_id, api_hash)
-
-
+    client.connect()
+    
+    if not client.is_user_authorized():
+        print("❌ Session is invalid or expired. Please re-upload SESSION_BASE64.")
+        return
+    
+    
     with client:
         for group_username in group_usernames:
             group_username = group_username.strip()

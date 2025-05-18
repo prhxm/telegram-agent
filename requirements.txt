@@ -1,0 +1,6 @@
+openai
+telethon
+python-dotenv
+supabase
+gspread
+oauth2client

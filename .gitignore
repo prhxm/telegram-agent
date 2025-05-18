@@ -1,0 +1,4 @@
+.env
+creds.json
+session_aihome.session
+__pycache__/

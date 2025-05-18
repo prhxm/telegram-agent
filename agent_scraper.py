@@ -14,8 +14,9 @@ load_dotenv()
 api_id = int(os.getenv("API_ID"))
 api_hash = os.getenv("API_HASH")
 openai_key = os.getenv("OPENAI_API_KEY")
-group_usernames = os.getenv("GROUPS").split(",")
-
+with open("groups.txt", "r") as f:
+    group_usernames = [line.strip() for line in f if line.strip()]
+         
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 supabase_table = os.getenv("SUPABASE_TABLE")

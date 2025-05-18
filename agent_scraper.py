@@ -9,6 +9,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from supabase import create_client, Client
 import json
+import base64
 
 # Load .env variables
 load_dotenv()
@@ -75,8 +76,16 @@ Return ONLY in this JSON format:
 
 # خواندن پیام‌ها و ذخیره پیام‌های جدید
 def run_agent():
-    print(f"⏱ Checking for new messages at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}...")
-    client = TelegramClient('session_aihome', api_id, api_hash)
+    print(f"⏱ Checking for new messages at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}...")    
+    
+    session_file = "session_aihome.session"
+    # Decode session file from base64
+    session_b64 = os.getenv("SESSION_BASE64")
+    with open(session_file, "wb") as f:
+        f.write(base64.b64decode(session_b64))
+
+    client = TelegramClient(session_file.replace(".session", ""), api_id, api_hash)
+
 
     with client:
         for group_username in group_usernames:

@@ -4,5 +4,4 @@ python-dotenv
 supabase
 gspread
 oauth2client
-json
 requests

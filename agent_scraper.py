@@ -10,6 +10,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from supabase import create_client, Client
 import json
 import base64
+import requests
 
 # Load .env variables
 load_dotenv()
@@ -82,6 +83,40 @@ Return ONLY in this JSON format:
     )
     return json.loads(chat.choices[0].message.content)
 
+# geocodeAndSave automation
+def clean_location(raw):
+    if not raw:
+        return ''
+    return (
+        raw.split(',')[0]
+        .replace(';', '')
+        .replace('Downtown', '')
+        .replace('Not specified', '')
+        .strip()
+    )
+
+def geocode_location(location_text):
+    cleaned = clean_location(location_text)
+    if not cleaned:
+        return None
+
+    base_query = f"{cleaned}, Vancouver, BC, Canada"
+    url = f"https://nominatim.openstreetmap.org/search?format=json&q={base_query}&addressdetails=1&limit=1"
+    headers = {"User-Agent": "telegram-geocoder-agent"}
+
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        return None
+
+    data = response.json()
+    if data and 'lat' in data[0] and 'lon' in data[0]:
+        return {
+            "lat": float(data[0]["lat"]),
+            "lng": float(data[0]["lon"])
+        }
+    return None
+
+
 # خواندن پیام‌ها و ذخیره پیام‌های جدید
 def run_agent():
     print(f"⏱ Checking for new messages at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}...")    
@@ -116,6 +151,12 @@ def run_agent():
                         if existing.data:
                             print("🟡 Skipped: duplicate message")
                             continue
+                        
+                        #geocode
+                        coords = geocode_location(data.get("location"))
+                        lat = coords["lat"] if coords else None
+                        lng = coords["lng"] if coords else None
+                        status = "success" if coords else "failed"
 
                         # Save to Supabase
                         supabase.table(supabase_table).insert({
@@ -126,6 +167,9 @@ def run_agent():
                             "property": data.get("property", "None"),
                             "notes": data.get("notes", "None"),
                             "extras": data.get("extras", "None"),
+                            "lat": lat,
+                            "lng": lng,
+                            "geocode_status": status,
                             "source_group": group_username
                         }).execute()
                         print(f"✅ Stored from {group_username}")

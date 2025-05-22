@@ -12,6 +12,21 @@ import json
 import base64
 import requests
 
+#numb from text
+import re
+
+def extract_price_number(price_text):
+    if not price_text:
+        return None
+
+    # مثال‌ها: "$2800", "2800 - 3200", "$1,950/mo", "2000 CAD", "Around 3000"
+    price_text = price_text.replace(",", "").replace("$", "")
+    match = re.search(r'(\d{3,5})', price_text)
+    if match:
+        return float(match.group(1))
+    return None
+
+
 # Load .env variables
 load_dotenv()
 api_id = int(os.getenv("API_ID"))
@@ -164,6 +179,7 @@ def run_agent():
                             "raw_text": data.get("translated_summary", msg.text),
                             "location": data.get("location", "None"),
                             "price": data.get("price", "None"),
+                            "price_num": extract_price_number(data.get("price")),
                             "property": data.get("property", "None"),
                             "notes": data.get("notes", "None"),
                             "extras": data.get("extras", "None"),
